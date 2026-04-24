@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hospital Meal Delivery — Robot & Staffing Schedule</title>
+<style>
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #555;
+  --color-text-tertiary: #888;
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f4f4f2;
+  --color-border-secondary: rgba(0,0,0,0.18);
+  --color-border-tertiary: rgba(0,0,0,0.1);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font-sans);
+  background: #f8f8f6;
+  color: var(--color-text-primary);
+  padding: 32px 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.page-title {
+  font-size: 20px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.page-sub {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-bottom: 28px;
+}
+.rt { position: relative; background: #fff; border-radius: 12px; padding: 28px; border: 0.5px solid var(--color-border-secondary); }
+.sum { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 18px; }
+.sc { background: var(--color-background-secondary); border-radius: 8px; padding: 11px 14px; }
+.sv { font-size: 24px; font-weight: 500; line-height: 1.2; }
+.sl { font-size: 11px; color: var(--color-text-secondary); margin-top: 4px; line-height: 1.4; }
+.tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+.tb { font-size: 13px; padding: 6px 18px; border-radius: 8px; border: 0.5px solid var(--color-border-secondary); cursor: pointer; background: none; color: var(--color-text-secondary); font-family: var(--font-sans); }
+.tb.on { background: var(--color-background-secondary); color: var(--color-text-primary); font-weight: 500; }
+.pan { display: none; } .pan.on { display: block; }
+.leg { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; align-items: center; }
+.li { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--color-text-secondary); }
+.ls { width: 16px; height: 10px; border-radius: 2px; }
+.lsep { width: 0.5px; height: 14px; background: var(--color-border-secondary); margin: 0 2px; }
+.ltag { font-size: 10px; font-weight: 500; color: var(--color-text-tertiary); letter-spacing: .05em; text-transform: uppercase; }
+.sh { font-size: 11px; font-weight: 500; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: .06em; margin: 0 0 8px; }
+.tow { overflow-x: auto; margin-bottom: 22px; }
+table { min-width: 620px; width: 100%; border-collapse: collapse; font-size: 12px; }
+thead th { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); padding: 6px 8px; border-bottom: 0.5px solid var(--color-border-secondary); white-space: nowrap; text-align: left; }
+tbody tr:nth-child(even) { background: var(--color-background-secondary); }
+tbody td { padding: 7px 8px; vertical-align: middle; white-space: nowrap; }
+.bdg { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 3px; }
+.gow { overflow-x: auto; }
+.gi { min-width: 640px; }
+.gr { display: flex; align-items: center; margin-bottom: 3px; }
+.gl { width: 115px; min-width: 115px; text-align: right; padding-right: 10px; }
+.gtr { position: relative; border-radius: 3px; background: var(--color-background-secondary); }
+.sep { height: 12px; }
+.pk { font-size: 12px; color: var(--color-text-secondary); background: var(--color-background-secondary); border-radius: 8px; padding: 10px 14px; margin-top: 10px; line-height: 1.6; }
+hr { border: none; border-top: 0.5px solid var(--color-border-tertiary); margin: 22px 0; }
+.nh { font-size: 13px; font-weight: 500; margin: 0 0 8px; }
+.nb { background: var(--color-background-secondary); border-radius: 8px; padding: 12px 16px; margin-bottom: 10px; }
+.nb p { font-size: 11px; color: var(--color-text-secondary); line-height: 1.7; margin-bottom: 5px; }
+.nb p:last-child { margin: 0; }
+.nb strong { color: var(--color-text-primary); font-weight: 500; }
+#tip {
+  position: fixed; z-index: 999; display: none;
+  background: #fff; border: 0.5px solid rgba(0,0,0,0.2);
+  border-radius: 6px; padding: 8px 12px; font-size: 11px;
+  line-height: 1.8; max-width: 250px; pointer-events: none;
+  color: var(--color-text-primary); font-family: var(--font-sans);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.footer { font-size: 11px; color: var(--color-text-tertiary); margin-top: 20px; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="page-title">Hospital Meal Delivery — Proposed Robot & Staffing Schedule</div>
+<div class="page-sub">Interactive analysis · Hover any bar for details · Switch meal periods using the tabs below</div>
+
+<div class="rt" id="root">
+<div id="tip"></div>
+
+<div class="sum">
+  <div class="sc">
+    <div class="sl">Robots needed</div>
+    <div class="sv" style="color:#534AB7;">3</div>
+    <div class="sl">Same 3 robots serve all 3 meals — periods don't overlap</div>
+  </div>
+  <div class="sc">
+    <div class="sl">Workers needed (proposed)</div>
+    <div class="sv" style="color:#185FA5;">5</div>
+    <div class="sl">Down from 8 current PDAs — 3 FTE reduction</div>
+  </div>
+  <div class="sc">
+    <div class="sl">Worker + robot sequences</div>
+    <div class="sv" style="font-size:14px;color:#0F6E56;padding-top:6px;">Identical<br>all 3 meals</div>
+  </div>
+</div>
+
+<div class="leg">
+  <span class="ltag">Robots</span>
+  <div class="li"><div class="ls" style="background:#7F77DD;"></div>R1 outbound</div>
+  <div class="li"><div class="ls" style="background:#7F77DD;opacity:.4;"></div>R1 return+attach</div>
+  <div class="li"><div class="ls" style="background:#1D9E75;"></div>R2 outbound</div>
+  <div class="li"><div class="ls" style="background:#1D9E75;opacity:.4;"></div>R2 return+attach</div>
+  <div class="li"><div class="ls" style="background:#D85A30;"></div>R3 outbound</div>
+  <div class="li"><div class="ls" style="background:#D85A30;opacity:.4;"></div>R3 return+attach</div>
+  <div class="lsep"></div>
+  <span class="ltag">Workers</span>
+  <div class="li"><div class="ls" style="background:#FAC775;"></div>Wkr 1</div>
+  <div class="li"><div class="ls" style="background:#85B7EB;"></div>Wkr 2</div>
+  <div class="li"><div class="ls" style="background:#9FE1CB;"></div>Wkr 3</div>
+  <div class="li"><div class="ls" style="background:#ED93B1;"></div>Wkr 4</div>
+  <div class="li"><div class="ls" style="background:#AFA9EC;"></div>Wkr 5</div>
+  <div class="li"><div style="width:18px;height:4px;background:#888;opacity:.4;border-radius:2px;"></div>Transit gap</div>
+</div>
+
+<div class="tabs">
+  <button class="tb on" onclick="sw('b',this)">Breakfast</button>
+  <button class="tb" onclick="sw('l',this)">Lunch</button>
+  <button class="tb" onclick="sw('d',this)">Dinner</button>
+</div>
+
+<div id="b" class="pan on"></div>
+<div id="l" class="pan"></div>
+<div id="d" class="pan"></div>
+
+<hr>
+<div class="nh">Assumptions made</div>
+<div class="nb">
+  <p><strong>Robot cycle time = 2 × elevator time + 3 min.</strong> Outbound travel (elev min) + disengage from cart (1 min) + return travel (elev min) + attach next cart (2 min). Return time equals outbound.</p>
+  <p><strong>Attach (2 min) charged once per cycle, at the end.</strong> Robot is "available" only after the attach completes. Not double-counted.</p>
+  <p><strong>Greedy robot assignment:</strong> each cart assigned to the earliest-free robot available at or before that cart's departure time.</p>
+  <p><strong>Same 3 robots serve all 3 meals</strong> — periods don't overlap. Fleet size = max needed in any single period = 3.</p>
+  <p><strong>Distribution time = census × 1 min/tray.</strong> Worker route gaps are 7–24 min between floors. These gaps must accommodate floor-to-floor transit — needs operational validation before committing to 5 workers.</p>
+</div>
+<div class="nh">Assumptions NOT made</div>
+<div class="nb">
+  <p><strong>Not modeled:</strong> elevator wait times or robot congestion at the same elevator bank, kitchen staging space conflicts, census variability on high-census days, empty cart return logistics, or robot timing safety buffers. Worker floor-to-floor travel distances not validated against the available gap times.</p>
+</div>
+
+</div>
+
+<div class="footer">Analysis based on provided hospital census and elevator time data.</div>
+
+<script>
+const tip = document.getElementById('tip');
+document.addEventListener('mousemove', function(e) {
+  const el = e.target.closest('[data-tip]');
+  if (el) {
+    let lx = e.clientX + 14;
+    let ly = e.clientY - 80;
+    if (lx + 260 > window.innerWidth) lx = e.clientX - 264;
+    if (ly < 4) ly = e.clientY + 16;
+    tip.style.left = lx + 'px';
+    tip.style.top = ly + 'px';
+    tip.innerHTML = el.getAttribute('data-tip');
+    tip.style.display = 'block';
+  } else {
+    tip.style.display = 'none';
+  }
+});
+document.addEventListener('mouseleave', function() { tip.style.display = 'none'; });
+
+function T(h,m){return h*60+m;}
+function fmt(t){
+  const h=Math.floor(t/60)%24,m=t%60,pm=h>=12,h12=h%12||12;
+  return h12+':'+(m<10?'0':'')+m+(pm?' PM':' AM');
+}
+
+const WC={
+  'Wkr 1':{b:'#FAC775',t:'#412402'},
+  'Wkr 2':{b:'#85B7EB',t:'#042C53'},
+  'Wkr 3':{b:'#9FE1CB',t:'#04342C'},
+  'Wkr 4':{b:'#ED93B1',t:'#4B1528'},
+  'Wkr 5':{b:'#AFA9EC',t:'#26215C'},
+};
+const RC={
+  R1:{s:'#7F77DD',t:'#fff'},
+  R2:{s:'#1D9E75',t:'#fff'},
+  R3:{s:'#D85A30',t:'#fff'},
+};
+
+const UNITS=[
+  {u:'C3',    elev:5,census:14,robot:'R1',worker:'Wkr 1',deps:{b:T(6,49), l:T(11,14),d:T(15,54)}},
+  {u:'W3',    elev:8,census:24,robot:'R2',worker:'Wkr 2',deps:{b:T(6,59), l:T(11,24),d:T(16,4)}},
+  {u:'W2',    elev:8,census:28,robot:'R1',worker:'Wkr 3',deps:{b:T(7,3),  l:T(11,28),d:T(16,8)}},
+  {u:'A2',    elev:3,census:18,robot:'R3',worker:'Wkr 4',deps:{b:T(7,8),  l:T(11,33),d:T(16,13)}},
+  {u:'A5',    elev:3,census:19,robot:'R3',worker:'Wkr 5',deps:{b:T(7,19), l:T(11,44),d:T(16,24)}},
+  {u:'A4',    elev:5,census:18,robot:'R2',worker:'Wkr 1',deps:{b:T(7,22), l:T(11,47),d:T(16,27)}},
+  {u:'A6',    elev:3,census:26,robot:'R1',worker:'Wkr 2',deps:{b:T(7,35), l:T(12,0), d:T(16,40)}},
+  {u:'D5',    elev:5,census:19,robot:'R3',worker:'Wkr 3',deps:{b:T(7,42), l:T(12,7), d:T(16,47)}},
+  {u:'A3',    elev:3,census:26,robot:'R2',worker:'Wkr 4',deps:{b:T(7,46), l:T(12,11),d:T(16,51)}},
+  {u:'ED',    elev:3,census:10,robot:'R1',worker:'Wkr 5',deps:{b:T(7,57), l:T(12,22),d:T(17,2)}},
+  {u:'Heart', elev:5,census:21,robot:'R2',worker:'Wkr 1',deps:{b:T(8,4),  l:T(12,29),d:T(17,9)}},
+];
+
+const RSEQ={
+  R1:['C3','W2','A6','ED'],
+  R2:['W3','A4','A3','Heart'],
+  R3:['A2','A5','D5'],
+};
+
+const WINDOWS={
+  b:{ws:T(6,45),we:T(8,35)},
+  l:{ws:T(11,10),we:T(13,0)},
+  d:{ws:T(15,45),we:T(17,40)},
+};
+
+const PEAKINFO={
+  b:{time:'7:27 AM', note:'Units W3, W2, A2, A5, A4 all distributing simultaneously. C3 finishes at 7:08 AM — before the peak.'},
+  l:{time:'11:52 AM',note:'Units W3, W2, A2, A5, A4 all distributing simultaneously. C3 finishes at 11:33 AM — before the peak.'},
+  d:{time:'4:32 PM', note:'Units W3, W2, A2, A5, A4 all distributing simultaneously. C3 finishes at 4:13 PM — before the peak.'},
+};
+
+const TW=520, LW=115;
+
+function renderMeal(key){
+  const {ws,we}=WINDOWS[key];
+  const span=we-ws;
+  const toX=t=>Math.round(((t-ws)/span)*TW);
+  const toW=d=>Math.max(Math.round((d/span)*TW),2);
+
+  const mU=UNITS.map(u=>{
+    const dep=u.deps[key];
+    const arr=dep+u.elev;
+    const done=arr+u.census;
+    return {...u,dep,arr,done};
+  });
+
+  const ts=Math.ceil(ws/15)*15;
+  const tArr=[];
+  for(let t=ts;t<=we;t+=15) tArr.push(t);
+
+  const mkTicks=()=>tArr.map(t=>
+    `<div style="position:absolute;left:${toX(t)}px;top:0;bottom:0;width:0.5px;background:rgba(0,0,0,0.08);pointer-events:none;"></div>`
+  ).join('');
+
+  const mkTickRow=()=>`<div class="gr" style="margin-bottom:4px;">
+    <div class="gl"></div>
+    <div style="position:relative;width:${TW}px;height:16px;">
+      ${tArr.map(t=>`<span style="position:absolute;left:${toX(t)}px;transform:translateX(-50%);font-size:10px;color:#999;white-space:nowrap;">${fmt(t)}</span>`).join('')}
+    </div>
+  </div>`;
+
+  let html=`<div class="sh">Schedule — all times calculated from source data</div>
+  <div class="tow"><table>
+  <thead><tr>
+    <th>Unit</th><th>Robot</th><th>Leaves kitchen</th><th>Arrives floor</th>
+    <th>Worker</th><th>Starts passing trays</th><th>Finishes</th><th>Trays</th>
+  </tr></thead><tbody>`;
+
+  mU.forEach(u=>{
+    const rc=RC[u.robot], wc=WC[u.worker];
+    html+=`<tr>
+      <td><strong>${u.u}</strong></td>
+      <td><span class="bdg" style="background:${rc.s};color:${rc.t};">${u.robot}</span></td>
+      <td>${fmt(u.dep)}</td>
+      <td>${fmt(u.arr)}</td>
+      <td><span class="bdg" style="background:${wc.b};color:${wc.t};">${u.worker}</span></td>
+      <td>${fmt(u.arr)}</td>
+      <td>${fmt(u.done)}</td>
+      <td style="text-align:center;">${u.census}</td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div>`;
+
+  html+=`<div class="sh" style="margin-top:4px;">Robot timeline — hover bars for details</div>
+  <div class="gow"><div class="gi">`;
+  html+=mkTickRow();
+
+  ['R1','R2','R3'].forEach(r=>{
+    const rc=RC[r];
+    let bars=mkTicks();
+    RSEQ[r].forEach(uname=>{
+      const u=mU.find(m=>m.u===uname);
+      const x=toX(u.dep);
+      const wOut=toW(u.elev+1);
+      const wRet=toW(u.elev+2);
+      const freeAt=u.dep+2*u.elev+3;
+      const tipOut=`${r} outbound to ${uname}<br>Leaves kitchen: ${fmt(u.dep)}<br>Arrives ${uname}: ${fmt(u.arr)}<br>Disengages: ${fmt(u.arr+1)}<br>Robot free at kitchen: ${fmt(freeAt)}`;
+      const tipRet=`${r} returning from ${uname}<br>Leaves ${uname}: ${fmt(u.arr+1)}<br>Return travel: ${u.elev} min<br>Attach next cart: 2 min<br>Robot free at kitchen: ${fmt(freeAt)}`;
+      bars+=`<div style="position:absolute;left:${x}px;top:3px;width:${wOut+wRet}px;height:22px;border-radius:3px;background:${rc.s};opacity:.1;pointer-events:none;"></div>`;
+      bars+=`<div data-tip="${tipOut}" style="position:absolute;left:${x}px;top:3px;width:${wOut}px;height:22px;border-radius:3px 0 0 3px;background:${rc.s};display:flex;align-items:center;padding:0 5px;overflow:hidden;cursor:default;">
+        <span style="font-size:10px;font-weight:500;color:${rc.t};white-space:nowrap;pointer-events:none;">${uname}</span>
+      </div>`;
+      bars+=`<div data-tip="${tipRet}" style="position:absolute;left:${x+wOut}px;top:3px;width:${wRet}px;height:22px;border-radius:0 3px 3px 0;background:${rc.s};opacity:.38;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.22) 0,rgba(255,255,255,.22) 2px,transparent 2px,transparent 5px);cursor:default;"></div>`;
+    });
+    html+=`<div class="gr">
+      <div class="gl"><span class="bdg" style="background:${rc.s};color:${rc.t};font-size:11px;padding:2px 10px;">${r}</span></div>
+      <div class="gtr" style="width:${TW}px;height:28px;">${bars}</div>
+    </div>`;
+  });
+
+  html+=`<div class="sep"></div>`;
+  html+=mkTickRow();
+
+  ['Wkr 1','Wkr 2','Wkr 3','Wkr 4','Wkr 5'].forEach(w=>{
+    const wc=WC[w];
+    const wUnits=mU.filter(u=>u.worker===w).sort((a,b)=>a.arr-b.arr);
+    let bars=mkTicks();
+
+    for(let i=0;i<wUnits.length-1;i++){
+      const from=wUnits[i], to=wUnits[i+1];
+      const gx=toX(from.done);
+      const gw=toX(to.arr)-gx;
+      const gap=to.arr-from.done;
+      if(gw>1&&gap>0){
+        bars+=`<div data-tip="Transit: ${from.u} to ${to.u}<br>Available time: ${gap} min<br>Worker must travel between floors in this window" style="position:absolute;left:${gx}px;top:12px;width:${gw}px;height:4px;border-radius:2px;background:#888;opacity:.35;cursor:default;"></div>`;
+      }
+    }
+
+    wUnits.forEach(u=>{
+      const x=toX(u.arr);
+      const bw=Math.max(toW(u.census),30);
+      const tipText=`${w} on unit ${u.u}<br>Cart arrives floor: ${fmt(u.arr)}<br>Passes trays: ${fmt(u.arr)} – ${fmt(u.done)}<br>${u.census} trays at 1 min each`;
+      bars+=`<div data-tip="${tipText}" style="position:absolute;left:${x}px;top:3px;width:${bw}px;height:22px;border-radius:3px;background:${wc.b};display:flex;align-items:center;padding:0 6px;overflow:hidden;cursor:default;">
+        <span style="font-size:10px;font-weight:500;color:${wc.t};white-space:nowrap;pointer-events:none;">${u.u} · ${fmt(u.arr)}–${fmt(u.done)}</span>
+      </div>`;
+    });
+
+    html+=`<div class="gr">
+      <div class="gl" style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
+        <span class="bdg" style="background:${wc.b};color:${wc.t};font-size:11px;padding:2px 8px;">${w}</span>
+        <span style="font-size:9px;color:#999;">${wUnits.map(u=>u.u).join(' → ')}</span>
+      </div>
+      <div class="gtr" style="width:${TW}px;height:28px;">${bars}</div>
+    </div>`;
+  });
+
+  html+=`</div></div>`;
+
+  const pk=PEAKINFO[key];
+  html+=`<div class="pk">Peak staffing: <strong style="color:#1a1a1a;">5 workers simultaneously distributing</strong> at ${pk.time}. ${pk.note}</div>`;
+
+  document.getElementById(key).innerHTML=html;
+}
+
+function sw(key,btn){
+  document.querySelectorAll('.tb').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.pan').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on');
+  const p=document.getElementById(key);
+  p.classList.add('on');
+  if(!p.innerHTML) renderMeal(key);
+}
+
+renderMeal('b');
+</script>
+</body>
+</html>
